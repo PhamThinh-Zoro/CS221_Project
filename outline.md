@@ -21,3 +21,7 @@ Tất cả thành viên đều phải nghiên cứu kĩ paper (đặc biệt là
 Nguyên ngày chủ nhật tập thuyết trình
 
 tối chủ nhật: họp lần cuối
+
+Deadline nội dung của Giang: 1h
+
+### train xong xuất file .pth
