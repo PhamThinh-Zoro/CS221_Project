@@ -1,4 +1,9 @@
-# 0. Tìm paper, dataset: Thịnh
+# Công việc của các thành viên
+- Thịnh: tìm paper, tìm data, chạy thực nghiệm trên data mới, soạn slides thuyết trình phần kiến trúc model, chạy demo, phân công
+- Giang: soạn slides thuyết trình phần intro và giới thiệu paper cũng như dataset
+- Nghĩa: chạy thực nghiệm trên data gốc, thuyết trình phần phân tích số liệu
+- Duy Anh: soạn slides phần phân tích số liệu
+
 # 1. Giới thiệu paper
 slides, thuyết trình: Giang: 21h30 tối thứ 6
 # 2. Đóng góp chính của paper
