@@ -60,3 +60,4 @@ Kiến trúc luồng truyền xuôi (Forward Pass) đi qua các lớp sau:
 - **Hàm mất mát (Loss Function):** Sử dụng `BCEWithLogitsLoss` (Binary Cross Entropy with Logits) thay vì CrossEntropy. Đây là hàm chuẩn chuẩn chỉnh cho bài toán **đa nhãn** (multilabel classification), nơi một câu có thể thuộc nhiều nhãn.
 - **Xử lý mất cân bằng dữ liệu:** Trọng số `pos_weight` được tích hợp vào hàm Loss để cân bằng tỷ lệ mẫu (tăng phạt khi dự đoán sai ở các nhãn thiểu số).
 - **Suy luận (Inference):** Tại bước dự đoán, `logits` được đi qua hàm kích hoạt `Sigmoid` và ngưỡng (threshold) `0.5` được thiết lập để quyết định trạng thái xuất hiện của từng cảm xúc một cách độc lập.
+
