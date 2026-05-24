@@ -1,127 +1,59 @@
 import streamlit as st
 import torch
-from transformers import (
-    AutoTokenizer,
-    AutoModelForSequenceClassification
-)
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
-# =========================================================
-# DEVICE
-# =========================================================
+# Cấu hình giao diện Streamlit
+st.set_page_config(page_title="ViSoBERT Sentiment Demo", page_icon="")
+st.title("Phân tích sắc thái bình luận với ViSoBERT")
+st.write("Demo mô hình fine-tune trên tập dữ liệu UIT-VSFC.")
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# =========================================================
-# PAGE CONFIG
-# =========================================================
-
-st.set_page_config(
-    page_title="Vietnamese Sentiment Analysis",
-    layout="centered"
-)
-
-# =========================================================
-# LABELS
-# =========================================================
-
-UIT_LABELS = {
-    0: "Negative",
-    1: "Neutral",
-    2: "Positive"
-}
-
-# =========================================================
-# TOKENIZER
-# =========================================================
-
-tokenizer = AutoTokenizer.from_pretrained(
-    "uitnlp/visobert",
-    use_fast=False
-)
-
-# =========================================================
-# LOAD MODEL
-# =========================================================
-
+# ==========================================
+# HÀM LOAD MODEL & TOKENIZER (DÙNG CACHE ĐỂ TRÁNH LOAD LẠI KHI REFRESH)
+# ==========================================
 @st.cache_resource
-def load_uit_model(model_path):
-
-    model = AutoModelForSequenceClassification.from_pretrained(
-        "uitnlp/visobert",
-        num_labels=3
-    )
-
-    model.load_state_dict(
-        torch.load(
-            model_path,
-            map_location=DEVICE
-        )
-    )
-
-    model.to(DEVICE)
+def load_model_and_tokenizer():
+    model_name = "uitnlp/visobert"
+    
+    # 1. Khởi tạo tokenizer chuẩn của ViSoBERT từ Hugging Face
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    
+    # 2. Khởi tạo khung kiến trúc mô hình với 3 nhãn đầu ra
+    model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=3)
+    
+    # 3. Load file trọng số .pth bạn đã tải từ Kaggle về (đặt cùng thư mục với file app.py)
+    # Dùng map_location='cpu' để chạy được trên máy cá nhân không có GPU
+    state_dict = torch.load("visobert_vsfc.pth", map_location=torch.device('cpu'))
+    
+    # 4. Đập trọng số từ file .pth vào khung mô hình
+    model.load_state_dict(state_dict)
     model.eval()
+    
+    return tokenizer, model
 
-    return model
+# Tiến hành load mô hình
+with st.spinner("Đang tải mô hình ViSoBERT... Vui lòng đợi trong giây lát."):
+    tokenizer, model = load_model_and_tokenizer()
 
-# =========================================================
-# PREDICT FUNCTION
-# =========================================================
+# ==========================================
+# GIAO DIỆN DỰ ĐOÁN (INFERENCE INTERFACE)
+# ==========================================
+# Nhãn tương ứng với các đầu ra 0, 1, 2 của UIT-VSFC
+target_names = {0: "Negative (Tiêu cực) 😡", 1: "Neutral (Bình thường) 😐", 2: "Positive (Tích cực) 😊"}
 
-def predict_uit(model, text):
+user_input = st.text_area("Nhập bình luận/bài viết mạng xã hội cần phân tích:", "Trường UIT học phí hợp lý mà chất lượng đào tạo tốt quá!")
 
-    encoding = tokenizer(
-        text,
-        add_special_tokens=True,
-        max_length=128,
-        padding='max_length',
-        truncation=True,
-        return_attention_mask=True,
-        return_tensors='pt'
-    )
-
-    input_ids = encoding["input_ids"].to(DEVICE)
-    attention_mask = encoding["attention_mask"].to(DEVICE)
-
-    with torch.no_grad():
-
-        outputs = model(
-            input_ids=input_ids,
-            attention_mask=attention_mask
-        )
-
-        pred = torch.argmax(outputs.logits, dim=-1).item()
-
-    return UIT_LABELS[pred]
-
-# =========================================================
-# UI
-# =========================================================
-
-st.title("Vietnamese Sentiment Analysis")
-
-st.write("Phân tích cảm xúc văn bản tiếng Việt (Mô hình UIT-VSFC)")
-
-text_input = st.text_area(
-    "Input text",
-    height=150,
-    placeholder="Nhập câu tiếng Việt..."
-)
-
-predict_button = st.button("Predict")
-
-# =========================================================
-# INFERENCE
-# =========================================================
-
-if predict_button:
-
-    if text_input.strip() == "":
-        st.warning("Please input text")
-        st.stop()
-
-    with st.spinner("Loading model..."):
-        model = load_uit_model("best_model.pth")
-
-    result = predict_uit(model, text_input)
-
-    st.success(f"**Prediction:** {result}")
+if st.button("Phân tích sắc thái"):
+    if user_input.strip() == "":
+        st.warning("Vui lòng nhập văn bản trước khi nhấn phân tích!")
+    else:
+        # Tokenize văn bản thô nhập từ giao diện
+        inputs = tokenizer(user_input, return_tensors="pt", max_length=128, padding="max_length", truncation=True)
+        
+        # Dự đoán không tính gradient để tối ưu tốc độ CPU
+        with torch.no_grad():
+            outputs = model(**inputs)
+            logits = outputs.logits
+            prediction = torch.argmax(logits, dim=-1).item()
+        
+        # Hiển thị kết quả ra màn hình demo
+        st.success(f"Kết quả dự đoán: **{target_names[prediction]}**")
