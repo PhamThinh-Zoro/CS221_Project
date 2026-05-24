@@ -1,303 +1,117 @@
 import streamlit as st
 import torch
-import torch.nn as nn
-from transformers import (
-    AutoTokenizer,
-    AutoModel,
-    AutoModelForSequenceClassification,
-    AutoConfig
-)
-from pyvi.ViTokenizer import tokenize
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
-# =========================================================
-# DEVICE
-# =========================================================
+# ==========================================
+# CẤU HÌNH BAN ĐẦU
+# ==========================================
+MODEL_NAME = "uitnlp/visobert"
+NUM_LABELS = 3
+LABELS = ["Tiêu cực (NEG)", "Trung tính (NEU)", "Tích cực (POS)"]
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# =========================================================
-# PAGE CONFIG
-# =========================================================
-
-st.set_page_config(
-    page_title="Vietnamese Sentiment Analysis",
-    layout="centered"
-)
-
-# =========================================================
-# LABELS
-# =========================================================
-
-UIT_LABELS = {
-    0: "Negative",
-    1: "Neutral",
-    2: "Positive"
+# Đường dẫn đến các file trọng số (hãy đảm bảo file tồn tại trong thư mục)
+MODEL_PATHS = {
+    "Model Fine-tuned trên VSFC": "best_model_vsfc.pth",
+    "Model Fine-tuned trên VSPL2016": "best_model_vspl.pth"
 }
 
-VIGO_LABELS = {
-    0: "amusement",
-    1: "excitement",
-    2: "joy",
-    3: "love",
-    4: "desire",
-    5: "optimism",
-    6: "caring",
-    7: "pride",
-    8: "admiration",
-    9: "gratitude",
-    10: "relief",
-    11: "approval",
-    12: "realization",
-    13: "surprise",
-    14: "curiosity",
-    15: "confusion",
-    16: "fear",
-    17: "nervousness",
-    18: "remorse",
-    19: "embarrassment",
-    20: "disappointment",
-    21: "sadness",
-    22: "grief",
-    23: "disgust",
-    24: "anger",
-    25: "annoyance",
-    26: "disapproval",
-    27: "neutral"
-}
-
-# =========================================================
-# MODEL CLASS FOR VIGO
-# =========================================================
-
-class ModelSentimentClassifier(nn.Module):
-
-    def __init__(self, n_classes):
-        super().__init__()
-
-        bert_model = "uitnlp/visobert"
-
-        config = AutoConfig.from_pretrained(
-            bert_model,
-            hidden_dropout_prob=0.1,
-            attention_probs_dropout_prob=0.1
-        )
-
-        self.bert = AutoModel.from_pretrained(
-            bert_model,
-            config=config
-        )
-
-        self.drop = nn.Dropout(p=0.2)
-
-        self.fc = nn.Linear(
-            self.bert.config.hidden_size,
-            n_classes
-        )
-
-    def forward(self, input_ids, attention_mask):
-
-        last_hidden_state, output = self.bert(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            return_dict=False
-        )
-
-        x = self.drop(output)
-        x = self.fc(x)
-
-        return {"logits": x}
-
-# =========================================================
-# TOKENIZER
-# =========================================================
-
-tokenizer = AutoTokenizer.from_pretrained(
-    "uitnlp/visobert",
-    use_fast=False
-)
-
-# =========================================================
-# LOAD MODELS
-# =========================================================
+# ==========================================
+# CÁC HÀM LOAD MODEL VÀ PREDICT
+# ==========================================
+@st.cache_resource
+def load_tokenizer():
+    """Load tokenizer và cache lại để không phải load nhiều lần"""
+    return AutoTokenizer.from_pretrained(MODEL_NAME)
 
 @st.cache_resource
-def load_uit_model(model_path):
+def load_model(model_path):
+    """Load model weight dựa trên đường dẫn được chọn"""
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME, num_labels=NUM_LABELS)
+    
+    try:
+        # Load weights đã fine-tune
+        model.load_state_dict(torch.load(model_path, map_location=device))
+        model.to(device)
+        model.eval()
+        return model, device
+    except FileNotFoundError:
+        st.error(f"Không tìm thấy file trọng số: {model_path}. Vui lòng đổi tên file model tương ứng và đặt cùng thư mục.")
+        return None, None
+    except Exception as e:
+        st.error(f"Lỗi khi load model: {e}")
+        return None, None
 
-    model = AutoModelForSequenceClassification.from_pretrained(
-        "uitnlp/visobert",
-        num_labels=3
-    )
-
-    model.load_state_dict(
-        torch.load(
-            model_path,
-            map_location=DEVICE
-        )
-    )
-
-    model.to(DEVICE)
-    model.eval()
-
-    return model
-
-
-@st.cache_resource
-def load_vigo_model(model_path):
-
-    model = torch.load(
-        model_path,
-        map_location=torch.device("cpu"),
-        weights_only=False
-    ) 
-
-    model.to(DEVICE)
-    model.eval()
-
-    return model
-
-# =========================================================
-# PREDICT FUNCTIONS
-# =========================================================
-
-def predict_uit(model, text):
-
-    encoding = tokenizer(
+def predict(text, model, tokenizer, device):
+    """Hàm dự đoán nhãn cho câu text đầu vào"""
+    inputs = tokenizer(
         text,
         add_special_tokens=True,
         max_length=128,
         padding='max_length',
         truncation=True,
         return_attention_mask=True,
-        return_tensors='pt'
+        return_tensors='pt',
     )
-
-    input_ids = encoding["input_ids"].to(DEVICE)
-    attention_mask = encoding["attention_mask"].to(DEVICE)
-
+    
+    input_ids = inputs['input_ids'].to(device)
+    attention_mask = inputs['attention_mask'].to(device)
+    
     with torch.no_grad():
+        outputs = model(input_ids, attention_mask=attention_mask)
+        logits = outputs.logits
+        probabilities = torch.softmax(logits, dim=-1)
+        pred_idx = torch.argmax(logits, dim=-1).item()
+        
+    return pred_idx, probabilities.cpu().numpy()[0]
 
-        outputs = model(
-            input_ids=input_ids,
-            attention_mask=attention_mask
-        )
+# ==========================================
+# GIAO DIỆN STREAMLIT
+# ==========================================
+def main():
+    st.set_page_config(page_title="Vietnamese Sentiment Analysis", page_icon="🎭")
+    st.title("🎭 Phân Loại Cảm Xúc Tiếng Việt")
+    st.markdown("Dự đoán cảm xúc của văn bản (Tiêu cực, Trung tính, Tích cực) sử dụng mô hình **ViSoBERT**.")
 
-        pred = torch.argmax(outputs.logits, dim=-1).item()
-
-    return UIT_LABELS[pred]
-
-
-def predict_vigo(model, text, threshold=0.5):
-
-    text = tokenize(text)
-
-    encoding = tokenizer(
-        text,
-        truncation=True,
-        add_special_tokens=True,
-        max_length=200,
-        padding='max_length',
-        return_attention_mask=True,
-        return_tensors='pt'
+    # 1. Chọn Model
+    st.sidebar.header("Cấu hình Model")
+    selected_model_name = st.sidebar.selectbox(
+        "Vui lòng chọn model để dự đoán:",
+        list(MODEL_PATHS.keys())
     )
+    
+    # 2. Khởi tạo model và tokenizer
+    tokenizer = load_tokenizer()
+    model_path = MODEL_PATHS[selected_model_name]
+    
+    with st.spinner('Đang tải mô hình... (Có thể mất một chút thời gian)'):
+        model, device = load_model(model_path)
 
-    input_ids = encoding["input_ids"].to(DEVICE)
-    attention_mask = encoding["attention_mask"].to(DEVICE)
+    # 3. Input Text
+    st.subheader("Nhập văn bản cần dự đoán")
+    user_input = st.text_area("Văn bản:", height=150, placeholder="Nhập một câu tiếng Việt vào đây để kiểm tra cảm xúc...")
 
-    with torch.no_grad():
-
-        outputs = model(
-            input_ids=input_ids,
-            attention_mask=attention_mask
-        )
-
-        probs = torch.sigmoid(outputs["logits"])[0]
-
-        preds = (probs >= threshold).int()
-
-    result = []
-
-    for i, value in enumerate(preds):
-
-        if value == 1:
-
-            result.append({
-                "label": VIGO_LABELS[i],
-                "score": float(probs[i])
-            })
-
-    return result
-
-# =========================================================
-# UI
-# =========================================================
-
-st.title("Vietnamese Sentiment Analysis")
-
-st.write("Select model and enter Vietnamese text")
-
-model_option = st.selectbox(
-    "Choose model",
-    [
-        "UIT-VSFC (3 labels)",
-        "ViGoEmotions (28 labels)"
-    ]
-)
-
-text_input = st.text_area(
-    "Input text",
-    height=150,
-    placeholder="Nhập câu tiếng Việt..."
-)
-
-predict_button = st.button("Predict")
-
-# =========================================================
-# INFERENCE
-# =========================================================
-
-if predict_button:
-
-    if text_input.strip() == "":
-        st.warning("Please input text")
-        st.stop()
-
-    # =====================================================
-    # UIT-VSFC
-    # =====================================================
-
-    if model_option == "UIT-VSFC (3 labels)":
-
-        with st.spinner("Loading model..."):
-
-            model = load_uit_model("best_model.pth")
-
-        result = predict_uit(model, text_input)
-
-        st.success(f"Prediction: {result}")
-
-    # =====================================================
-    # VIGO
-    # =====================================================
-
-    else:
-
-        with st.spinner("Loading model..."):
-
-            model = load_vigo_model("visobert.pth")
-
-        results = predict_vigo(model, text_input)
-
-        st.success("Predicted Labels")
-
-        if len(results) == 0:
-
-            st.write("No emotion detected")
-
+    # 4. Nút Predict
+    if st.button("Dự đoán 🚀"):
+        if not user_input.strip():
+            st.warning("Vui lòng nhập văn bản trước khi dự đoán!")
+        elif model is None:
+            st.error("Mô hình chưa được tải thành công. Vui lòng kiểm tra lại file .pth!")
         else:
+            with st.spinner('Đang xử lý...'):
+                pred_idx, probs = predict(user_input, model, tokenizer, device)
+                
+                predicted_label = LABELS[pred_idx]
+                
+                # Hiển thị kết quả
+                st.success(f"**Kết quả dự đoán:** {predicted_label}")
+                
+                # Hiển thị độ tin cậy (Confidence scores)
+                st.markdown("### Độ tin cậy (Confidence Scores):")
+                col1, col2, col3 = st.columns(3)
+                col1.metric(label=LABELS[0], value=f"{probs[0]*100:.2f}%")
+                col2.metric(label=LABELS[1], value=f"{probs[1]*100:.2f}%")
+                col3.metric(label=LABELS[2], value=f"{probs[2]*100:.2f}%")
 
-            for item in results:
-
-                st.write(
-                    f"• {item['label']} "
-                    f"({item['score']:.4f})"
-                )
+if __name__ == "__main__":
+    main()
