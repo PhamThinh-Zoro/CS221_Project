@@ -61,6 +61,10 @@ So với PhoBERT:
 
 ![ViSoBERT Architecture](../architecture.png)
 
+### Ông chỉ cần import tấm ảnh này là được khỏi phải ghi lại nội dung bên trên, mình sẽ nhìn hình để nói
+
+### Phần fine tuning thì soạn slides đi
+
 # 3 Fine-tuning
 
 ## Hyperparameters
