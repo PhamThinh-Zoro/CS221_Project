@@ -1,31 +1,58 @@
 # CS231 Project Nhóm 3
 
-#### Đây là cấu trúc chính của dataset và code thực nghiệm
+## Cấu trúc dataset và code thực nghiệm
 
-### |── Experiment/
-│   ├── thongke-UIT-VSFC.ipynb -> thống kê số nhãn trong data UIT-VSFC
-│   ├── UIT-VSFC.ipynb -> code thực nghiệm fine tuning trên dataset UIT-VSFC
-│   ├── VLSP2016.ipynb -> code thực nghiệm fine tuning trên dataset VLSP2016
+```text
+├── Experiment/
+│   ├── thongke-UIT-VSFC.ipynb
+│   │      # Thống kê số nhãn trong dataset UIT-VSFC
+│   │
+│   ├── UIT-VSFC.ipynb
+│   │      # Code thực nghiệm fine-tuning trên dataset UIT-VSFC
+│   │
+│   ├── VLSP2016.ipynb
+│   │      # Code thực nghiệm fine-tuning trên dataset VLSP2016
+│   │
 │   ├── readme1.md
-│   └── readme1.md
-
-### ├── vlsp2016/
+│   │      # Mô tả thực nghiệm fine-tune trên dataset gốc của paper (SA-VLSP2016)
+│   │
+│   └── readme2.md
+│          # Mô tả thực nghiệm fine-tune trên dataset mới (UIT-VSFC)
+│
+├── vlsp2016/
 │   ├── train.csv
 │   ├── dev.csv
 │   └── test.csv
-### |── vsfc/
-    ├── train
+│
+└── vsfc/
+    ├── README.txt
+    │      # Mô tả cấu trúc dataset UIT-VSFC
+    │      # Bao gồm ý nghĩa các file:
+    │      # sentiments.txt, sents.txt, topics.txt
+    │
+    ├── train/
     │   ├── sentiments.txt
     │   ├── sents.txt
     │   └── topics.txt
-    ├── dev
+    │
+    ├── dev/
     │   ├── sentiments.txt
     │   ├── sents.txt
     │   └── topics.txt
-    └── test
+    │
+    └── test/
         ├── sentiments.txt
         ├── sents.txt
         └── topics.txt
+```
 
-### - readme1.md (thuộc folder Experiment) là file mô tả thực nghiệm fine tune trên dataset gốc của paper (SA-VLSP2016)
-### - readme2.md (thuộc folder Experiment) là file mô tả thực nghiệm fine tune trên dataset mới (UIT-VSFC)
+### Ghi chú
+
+- `readme1.md` (thuộc folder `Experiment`) là file mô tả thực nghiệm fine-tune trên dataset gốc của paper (`SA-VLSP2016`).
+
+- `readme2.md` (thuộc folder `Experiment`) là file mô tả thực nghiệm fine-tune trên dataset mới (`UIT-VSFC`).
+
+- `README.txt` trong folder `vsfc` mô tả cấu trúc và ý nghĩa của dataset UIT-VSFC:
+  - `sents.txt`: chứa nội dung văn bản.
+  - `sentiments.txt`: chứa nhãn cảm xúc tương ứng.
+  - `topics.txt`: chứa chủ đề của từng câu dữ liệu.
