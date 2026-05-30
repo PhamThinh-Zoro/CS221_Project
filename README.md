@@ -56,3 +56,21 @@
   - `sents.txt`: chứa nội dung văn bản.
   - `sentiments.txt`: chứa nhãn cảm xúc tương ứng.
   - `topics.txt`: chứa chủ đề của từng câu dữ liệu.
+
+### Hướng dẫn sử dụng
+
+- Sử dụng kaggle để chạy thực nghiệm.
+
+
+## Mô hình ViSoBERT cho Bài toán Phân tích Cảm xúc trên tập dữ liệu SA-VLSP2016
+
+- Import file `VLSP2016.ipynb` lên notebook của bạn trên kaggle.
+- Import data [vlsp2016](https://www.kaggle.com/datasets/easterharry/vlsp-2016) vào notebook.
+- Ấn run all để chạy thực nghiệm và in ra kết quả.
+
+## Mô hình ViSoBERT cho Bài toán Phân loại Cảm xúc trên Tập dữ liệu UIT-VSFC
+
+- Import file `UIT-VSFC.ipynb` lên notebook của bạn trên kaggle.
+- Import data [vsfc](https://drive.google.com/drive/folders/1xclbjHHK58zk2X6iqbvMPS2rcy9y9E0X) vào notebook.
+- Chỉnh lại path /kaggle/input/datasets/phamthinhzoro/uit-vsfc/new_data/train sao cho phù hợp với đường dẫn data input sao cho hợp lý.
+- Ấn run all để chạy thực nghiệm và in ra kết quả.
