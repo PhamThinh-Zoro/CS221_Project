@@ -59,6 +59,7 @@
 
 ### Hướng dẫn sử dụng
 
+- Clone github [CS221](https://github.com/PhamThinh-Zoro/CS221_Project.git) để lấy các file theo cấu trúc cây thư mục ở trên.
 - Sử dụng kaggle để chạy thực nghiệm.
 
 
