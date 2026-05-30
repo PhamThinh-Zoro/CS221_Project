@@ -62,13 +62,13 @@
 - Sử dụng kaggle để chạy thực nghiệm.
 
 
-## Mô hình ViSoBERT cho Bài toán Phân tích Cảm xúc trên tập dữ liệu SA-VLSP2016
+#### Mô hình ViSoBERT cho Bài toán Phân tích Cảm xúc trên tập dữ liệu SA-VLSP2016
 
 - Import file `VLSP2016.ipynb` lên notebook của bạn trên kaggle.
 - Import data [vlsp2016](https://www.kaggle.com/datasets/easterharry/vlsp-2016) vào notebook.
 - Ấn run all để chạy thực nghiệm và in ra kết quả.
 
-## Mô hình ViSoBERT cho Bài toán Phân loại Cảm xúc trên Tập dữ liệu UIT-VSFC
+#### Mô hình ViSoBERT cho Bài toán Phân loại Cảm xúc trên Tập dữ liệu UIT-VSFC
 
 - Import file `UIT-VSFC.ipynb` lên notebook của bạn trên kaggle.
 - Import data [vsfc](https://drive.google.com/drive/folders/1xclbjHHK58zk2X6iqbvMPS2rcy9y9E0X) vào notebook.
